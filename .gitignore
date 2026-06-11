@@ -217,3 +217,11 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 data/logs/*.ulg
+WebODM/
+data/datasets/
+data/*.tif
+.DS_Store
+data/datasets/
+data/*.tif
+WebODM/
+.DS_Store
