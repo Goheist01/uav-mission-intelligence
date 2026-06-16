@@ -225,3 +225,5 @@ data/datasets/
 data/*.tif
 WebODM/
 .DS_Store
+data/lidar/*.las
+data/lidar/*.laz
