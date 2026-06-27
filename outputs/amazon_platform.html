@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Amazon Deforestation Intelligence Platform</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0c0c0c; --panel: #131313; --border: rgba(255,255,255,0.08);
+  --accent: #00FF88; --red: #FF6B6B; --gold: #FFD700; --teal: #4ECDC4;
+  --blue: #00BFFF; --text: rgba(255,255,255,0.85); --text-dim: rgba(255,255,255,0.45);
+  --mono: 'Courier New', monospace;
+}
+html, body { height: 100%; width: 100%; overflow: hidden; background: var(--bg); }
+#layout { display: flex; height: 100vh; width: 100vw; }
+
+#sidebar {
+  width: 300px; min-width: 300px; background: var(--panel);
+  border-right: 1px solid var(--border); display: flex;
+  flex-direction: column; overflow: hidden; z-index: 1000;
+}
+#sidebar-header { padding: 1.1rem 1.1rem 0.9rem; border-bottom: 1px solid var(--border); }
+.eyebrow { font-family: var(--mono); font-size: 9px; letter-spacing: 0.15em; color: var(--accent); text-transform: uppercase; opacity: 0.7; margin-bottom: 0.35rem; }
+.platform-title { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--text); line-height: 1.35; }
+.platform-sub { font-family: var(--mono); font-size: 9px; color: var(--text-dim); margin-top: 0.25rem; }
+
+#stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); border-bottom: 1px solid var(--border); }
+.stat-cell { background: var(--panel); padding: 0.75rem 0.9rem; }
+.stat-value { font-family: var(--mono); font-size: 17px; font-weight: 700; color: var(--accent); }
+.stat-label { font-family: var(--mono); font-size: 8px; letter-spacing: 0.08em; color: var(--text-dim); text-transform: uppercase; margin-top: 0.1rem; }
+.stat-cell.violation .stat-value { color: var(--red); }
+
+#filters { padding: 0.9rem 1.1rem; border-bottom: 1px solid var(--border); }
+.filter-label { font-family: var(--mono); font-size: 8px; letter-spacing: 0.1em; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.35rem; display: block; }
+.filter-row { margin-bottom: 0.75rem; }
+.filter-row:last-child { margin-bottom: 0; }
+select, input[type="number"] { background: var(--bg); border: 1px solid var(--border); color: var(--text); font-family: var(--mono); font-size: 11px; padding: 0.35rem 0.55rem; border-radius: 3px; width: 100%; }
+.year-inputs { display: flex; gap: 0.4rem; align-items: center; }
+.year-inputs input { width: 75px; }
+.year-sep { font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
+.toggle-row { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; }
+.toggle-row input[type="checkbox"] { width: auto; cursor: pointer; accent-color: var(--red); }
+.toggle-row span { font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
+.apply-btn { width: 100%; background: transparent; border: 1px solid var(--accent); color: var(--accent); font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; padding: 0.45rem; border-radius: 3px; cursor: pointer; margin-top: 0.65rem; transition: all 0.2s; }
+.apply-btn:hover { background: var(--accent); color: #000; }
+
+#detail-panel { flex: 1; padding: 0.9rem 1.1rem; overflow-y: auto; }
+.detail-title { font-family: var(--mono); font-size: 8px; letter-spacing: 0.1em; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.65rem; }
+.detail-empty { font-family: var(--mono); font-size: 11px; color: rgba(255,255,255,0.2); font-style: italic; }
+.detail-card { background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 0.75rem; display: none; }
+.detail-card.visible { display: block; }
+.detail-badge { font-family: var(--mono); font-size: 8px; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.18rem 0.45rem; border-radius: 2px; display: inline-block; margin-bottom: 0.55rem; }
+.badge-violation { background: rgba(255,107,107,0.2); color: var(--red); }
+.badge-normal { background: rgba(255,255,255,0.05); color: var(--text-dim); }
+.detail-row { display: flex; justify-content: space-between; padding: 0.28rem 0; border-bottom: 1px solid var(--border); font-family: var(--mono); font-size: 10px; }
+.detail-row:last-child { border-bottom: none; }
+.detail-key { color: var(--text-dim); }
+.detail-val { color: var(--text); font-weight: 600; text-align: right; max-width: 60%; }
+
+#legend { padding: 0.75rem 1.1rem; border-top: 1px solid var(--border); }
+.legend-title { font-family: var(--mono); font-size: 8px; letter-spacing: 0.1em; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.4rem; }
+.legend-items { display: flex; flex-wrap: wrap; gap: 0.35rem 0.65rem; }
+.legend-item { display: flex; align-items: center; gap: 0.28rem; font-family: var(--mono); font-size: 9px; color: var(--text-dim); }
+.legend-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.legend-pa { width: 14px; height: 3px; border-radius: 1px; flex-shrink: 0; }
+
+#map { flex: 1; }
+.leaflet-container { background: #0a0a0a; }
+.leaflet-tooltip { background: #131313; border: 1px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.75); font-family: 'Courier New', monospace; font-size: 10px; padding: 4px 8px; border-radius: 3px; box-shadow: none; }
+.leaflet-tooltip::before { display: none; }
+
+#loading { position: fixed; inset: 0; background: rgba(0,0,0,0.92); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; font-family: 'Courier New', monospace; color: #00FF88; }
+.load-bar-wrap { width: 220px; height: 2px; background: rgba(255,255,255,0.08); border-radius: 1px; margin-top: 1.2rem; overflow: hidden; }
+.load-bar { height: 100%; width: 0%; background: #00FF88; border-radius: 1px; transition: width 0.4s ease; }
+.load-text { font-size: 11px; letter-spacing: 0.12em; margin-top: 0.75rem; text-transform: uppercase; }
+.load-sub { font-size: 9px; color: rgba(255,255,255,0.3); margin-top: 0.3rem; letter-spacing: 0.06em; }
+
+.methodology-note { font-family: var(--mono); font-size: 9px; color: rgba(255,255,255,0.2); border-top: 1px solid var(--border); padding: 0.6rem 1.1rem; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div style="font-size:22px;opacity:0.8">◉</div>
+  <div class="load-bar-wrap"><div class="load-bar" id="loadBar"></div></div>
+  <div class="load-text" id="loadText">Initializing</div>
+  <div class="load-sub" id="loadSub">Amazon Deforestation Intelligence Platform</div>
+</div>
+
+<div id="layout">
+  <div id="sidebar">
+    <div id="sidebar-header">
+      <div class="eyebrow">Sprint 09 · UAV Mission Intelligence</div>
+      <div class="platform-title">Amazon Deforestation<br>Intelligence Platform</div>
+      <div class="platform-sub">Hansen GFC v1.11 · MODIS MCD12Q1 · WDPA · PostGIS · Supabase</div>
+    </div>
+
+    <div id="stats-grid">
+      <div class="stat-cell">
+        <div class="stat-value" id="stat-events">—</div>
+        <div class="stat-label">Events Shown</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-value" id="stat-ha">—</div>
+        <div class="stat-label">Pixels (0.09 ha ea)</div>
+      </div>
+      <div class="stat-cell violation">
+        <div class="stat-value" id="stat-violations">—</div>
+        <div class="stat-label">PA Violations</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-value" id="stat-driver">—</div>
+        <div class="stat-label">Top Driver</div>
+      </div>
+    </div>
+
+    <div id="filters">
+      <div class="filter-row">
+        <span class="filter-label">Year Range</span>
+        <div class="year-inputs">
+          <input type="number" id="year-from" value="2001" min="2001" max="2023">
+          <span class="year-sep">→</span>
+          <input type="number" id="year-to" value="2023" min="2001" max="2023">
+        </div>
+      </div>
+      <div class="filter-row">
+        <span class="filter-label">Loss Driver</span>
+        <select id="driver-filter">
+          <option value="all">All drivers</option>
+          <option value="Forest Degradation">Forest Degradation</option>
+          <option value="Cattle Ranching">Cattle Ranching</option>
+          <option value="Agriculture">Agriculture</option>
+          <option value="Fire">Fire</option>
+          <option value="Mining">Mining</option>
+        </select>
+      </div>
+      <div class="filter-row">
+        <label class="toggle-row">
+          <input type="checkbox" id="violations-only">
+          <span>Protected area violations only</span>
+        </label>
+      </div>
+      <button class="apply-btn" onclick="applyFilters()">APPLY FILTERS</button>
+    </div>
+
+    <div id="detail-panel">
+      <div class="detail-title">Selected Event</div>
+      <div class="detail-empty" id="detail-empty">Click any point on the map to inspect a deforestation event.</div>
+      <div class="detail-card" id="detail-card">
+        <div id="detail-badge" class="detail-badge"></div>
+        <div class="detail-row"><span class="detail-key">Year</span><span class="detail-val" id="d-year"></span></div>
+        <div class="detail-row"><span class="detail-key">Driver</span><span class="detail-val" id="d-driver"></span></div>
+        <div class="detail-row"><span class="detail-key">Canopy Cover</span><span class="detail-val" id="d-canopy"></span></div>
+        <div class="detail-row"><span class="detail-key">State</span><span class="detail-val" id="d-state"></span></div>
+        <div class="detail-row"><span class="detail-key">Coordinates</span><span class="detail-val" id="d-coords"></span></div>
+      </div>
+    </div>
+
+    <div class="methodology-note">
+      Drivers: MODIS MCD12Q1 post-loss land cover proxy.<br>
+      Boundaries: WDPA v2024 (370 registered areas).<br>
+      Coords + canopy: Hansen GFC v1.11 real pixel values.
+    </div>
+
+    <div id="legend">
+      <div class="legend-title">Loss Driver</div>
+      <div class="legend-items">
+        <div class="legend-item"><div class="legend-dot" style="background:#4ECDC4"></div>Degradation</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#FF6B6B"></div>Cattle</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#FFD700"></div>Agriculture</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#FF8C00"></div>Fire</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#9B59B6"></div>Mining</div>
+        <div class="legend-item"><div class="legend-pa" style="background:rgba(0,255,136,0.15);border:1px solid #00FF88"></div>WDPA Boundary</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#FF6B6B;box-shadow:0 0 0 2px #FF6B6B"></div>Violation</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="map"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const SUPABASE_URL = 'https://guigepoviaqooftjwxzj.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd1aWdlcG92aWFxb29mdGp3eHpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1MDk4NTIsImV4cCI6MjA5ODA4NTg1Mn0.IsoarD0EbV5GVOn_Bn5rLFi0ysud6Y47H__Eyh-c3JU';
+const HEADERS = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` };
+
+const DRIVER_COLORS = {
+  'Forest Degradation': '#4ECDC4',
+  'Cattle Ranching':    '#FF6B6B',
+  'Agriculture':        '#FFD700',
+  'Fire':               '#FF8C00',
+  'Mining':             '#9B59B6',
+};
+
+let map, markersLayer, allData = [];
+
+function setLoad(pct, text, sub) {
+  document.getElementById('loadBar').style.width  = pct + '%';
+  document.getElementById('loadText').textContent = text;
+  if (sub) document.getElementById('loadSub').textContent = sub;
+}
+
+map = L.map('map', { center: [-6.0, -54.0], zoom: 5, zoomControl: true });
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  attribution: '© OpenStreetMap contributors, © CARTO · Data: Hansen GFC, MODIS, WDPA',
+  maxZoom: 19
+}).addTo(map);
+
+markersLayer = L.layerGroup().addTo(map);
+const paLayer = L.layerGroup().addTo(map);
+
+async function fetchAll() {
+  try {
+    // 1 — Loss events (paginated)
+    setLoad(15, 'Loading loss events', 'Hansen GFC v1.11 · 1,121 pixels');
+    const [r1, r2] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/loss_events?select=id,longitude,latitude,loss_year,area_ha,loss_driver,tree_canopy_pct,state,is_violation&limit=600&offset=0`,   { headers: HEADERS }),
+      fetch(`${SUPABASE_URL}/rest/v1/loss_events?select=id,longitude,latitude,loss_year,area_ha,loss_driver,tree_canopy_pct,state,is_violation&limit=600&offset=600`, { headers: HEADERS }),
+    ]);
+    const [d1, d2] = await Promise.all([r1.json(), r2.json()]);
+    allData = [...d1, ...d2];
+
+    // 2 — Protected areas (paginated — 370 features)
+    setLoad(45, 'Loading WDPA boundaries', '370 registered protected areas');
+    const [p1, p2, p3, p4] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/protected_areas?select=area_name,area_type,protection_level,geom_geojson&limit=100&offset=0`,   { headers: HEADERS }),
+      fetch(`${SUPABASE_URL}/rest/v1/protected_areas?select=area_name,area_type,protection_level,geom_geojson&limit=100&offset=100`, { headers: HEADERS }),
+      fetch(`${SUPABASE_URL}/rest/v1/protected_areas?select=area_name,area_type,protection_level,geom_geojson&limit=100&offset=200`, { headers: HEADERS }),
+      fetch(`${SUPABASE_URL}/rest/v1/protected_areas?select=area_name,area_type,protection_level,geom_geojson&limit=100&offset=300`, { headers: HEADERS }),
+    ]);
+    const paData = [
+      ...(await p1.json()),
+      ...(await p2.json()),
+      ...(await p3.json()),
+      ...(await p4.json()),
+    ];
+
+    // 3 — Render protected areas
+    setLoad(70, 'Rendering boundaries', `${paData.length} WDPA polygons`);
+    paData.forEach(pa => {
+      if (!pa.geom_geojson) return;
+      try {
+        const geojson = JSON.parse(pa.geom_geojson);
+        L.geoJSON({ type: 'Feature', geometry: geojson, properties: pa }, {
+          style: {
+            color: '#00FF88', fillColor: '#00FF88',
+            fillOpacity: 0.06, weight: 1, opacity: 0.45
+          }
+        }).addTo(paLayer)
+          .bindTooltip(
+            `<b>${pa.area_name}</b><br>${pa.area_type}`,
+            { sticky: true }
+          );
+      } catch(e) { /* skip malformed geometries */ }
+    });
+
+    setLoad(100, 'Complete', `${allData.length} events · ${paData.length} protected areas`);
+    setTimeout(() => {
+      document.getElementById('loading').style.display = 'none';
+    }, 500);
+
+    applyFilters();
+
+  } catch(err) {
+    document.getElementById('loadText').textContent = 'Connection error';
+    console.error(err);
+  }
+}
+
+function getColor(driver) { return DRIVER_COLORS[driver] || '#888'; }
+
+function applyFilters() {
+  const yearFrom = parseInt(document.getElementById('year-from').value);
+  const yearTo   = parseInt(document.getElementById('year-to').value);
+  const driver   = document.getElementById('driver-filter').value;
+  const vOnly    = document.getElementById('violations-only').checked;
+
+  const filtered = allData.filter(d =>
+    d.loss_year >= yearFrom && d.loss_year <= yearTo &&
+    (driver === 'all' || d.loss_driver === driver) &&
+    (!vOnly || d.is_violation)
+  );
+
+  renderMarkers(filtered);
+  updateStats(filtered);
+}
+
+function renderMarkers(data) {
+  markersLayer.clearLayers();
+  data.forEach(d => {
+    const color = getColor(d.loss_driver);
+    const isV   = d.is_violation;
+    const m = L.circleMarker([d.latitude, d.longitude], {
+      radius:      5,
+      fillColor:   color,
+      color:       isV ? '#FF6B6B' : 'rgba(0,0,0,0.2)',
+      weight:      isV ? 2.5 : 0.5,
+      fillOpacity: isV ? 0.95 : 0.75,
+    });
+    m.on('click', () => showDetail(d));
+    markersLayer.addLayer(m);
+  });
+}
+
+function updateStats(data) {
+  const violations = data.filter(d => d.is_violation).length;
+  const counts = {};
+  data.forEach(d => { counts[d.loss_driver] = (counts[d.loss_driver]||0) + 1; });
+  const top = Object.entries(counts).sort((a,b)=>b[1]-a[1])[0];
+  document.getElementById('stat-events').textContent     = data.length.toLocaleString();
+  document.getElementById('stat-ha').textContent         = data.length.toLocaleString();
+  document.getElementById('stat-violations').textContent = violations;
+  document.getElementById('stat-driver').textContent     = top ? top[0].split(' ')[0] : '—';
+}
+
+function showDetail(d) {
+  document.getElementById('detail-empty').style.display = 'none';
+  const card = document.getElementById('detail-card');
+  card.classList.add('visible');
+  const badge = document.getElementById('detail-badge');
+  badge.textContent = d.is_violation ? '⚠ Protected Area Violation' : 'Loss Event';
+  badge.className   = `detail-badge ${d.is_violation ? 'badge-violation' : 'badge-normal'}`;
+  document.getElementById('d-year').textContent   = d.loss_year;
+  document.getElementById('d-driver').textContent = d.loss_driver;
+  document.getElementById('d-canopy').textContent = `${d.tree_canopy_pct}%`;
+  document.getElementById('d-state').textContent  = d.state;
+  document.getElementById('d-coords').textContent =
+    `${parseFloat(d.latitude).toFixed(4)}, ${parseFloat(d.longitude).toFixed(4)}`;
+}
+
+fetchAll();
+</script>
+</body>
+</html>
