@@ -70,6 +70,18 @@ select, input[type="number"] { background: var(--bg); border: 1px solid var(--bo
 .leaflet-container { background: #0a0a0a; }
 .leaflet-tooltip { background: #131313; border: 1px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.75); font-family: 'Courier New', monospace; font-size: 10px; padding: 4px 8px; border-radius: 3px; box-shadow: none; }
 .leaflet-tooltip::before { display: none; }
+.leaflet-control-layers {
+  background: #131313 !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  border-radius: 4px !important;
+  box-shadow: none !important;
+  font-family: 'Courier New', monospace !important;
+  font-size: 10px !important;
+  color: rgba(255,255,255,0.6) !important;
+  padding: 4px 8px !important;
+}
+.leaflet-control-layers label { color: rgba(255,255,255,0.6) !important; letter-spacing: 0.05em; }
+.leaflet-control-layers-selector { accent-color: #00FF88; }
 
 #loading { position: fixed; inset: 0; background: rgba(0,0,0,0.92); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; font-family: 'Courier New', monospace; color: #00FF88; }
 .load-bar-wrap { width: 220px; height: 2px; background: rgba(255,255,255,0.08); border-radius: 1px; margin-top: 1.2rem; overflow: hidden; }
@@ -204,10 +216,24 @@ function setLoad(pct, text, sub) {
 }
 
 map = L.map('map', { center: [-6.0, -54.0], zoom: 5, zoomControl: true });
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+
+const darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
   attribution: '© OpenStreetMap contributors, © CARTO · Data: Hansen GFC, MODIS, WDPA',
   maxZoom: 19
-}).addTo(map);
+});
+
+const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+  attribution: '© Esri, Maxar, Earthstar Geographics · Data: Hansen GFC, MODIS, WDPA',
+  maxZoom: 19
+});
+
+darkLayer.addTo(map);
+
+L.control.layers(
+  { 'Dark Map': darkLayer, 'Satellite': satelliteLayer },
+  {},
+  { position: 'topright', collapsed: false }
+).addTo(map);
 
 markersLayer = L.layerGroup().addTo(map);
 const paLayer = L.layerGroup().addTo(map);
