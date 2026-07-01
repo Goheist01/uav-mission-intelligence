@@ -1,814 +1,534 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Mekong Delta Agricultural Intelligence Platform</title>
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"
-    />
-    <style>
-      * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-      }
-      :root {
-        --bg: #0c0c0c;
-        --panel: #131313;
-        --border: rgba(255, 255, 255, 0.08);
-        --accent: #00ff88;
-        --red: #ff6b6b;
-        --gold: #ffd700;
-        --teal: #4ecdc4;
-        --blue: #00bfff;
-        --text: rgba(255, 255, 255, 0.85);
-        --text-dim: rgba(255, 255, 255, 0.45);
-        --mono: "Courier New", monospace;
-      }
-      html,
-      body {
-        height: 100%;
-        width: 100%;
-        overflow: hidden;
-        background: var(--bg);
-      }
-      #layout {
-        display: flex;
-        height: 100vh;
-        width: 100vw;
-      }
-      #sidebar {
-        width: 300px;
-        min-width: 300px;
-        background: var(--panel);
-        border-right: 1px solid var(--border);
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-        z-index: 1000;
-      }
-      #sidebar-header {
-        padding: 1.1rem 1.1rem 0.9rem;
-        border-bottom: 1px solid var(--border);
-      }
-      .eyebrow {
-        font-family: var(--mono);
-        font-size: 9px;
-        letter-spacing: 0.15em;
-        color: var(--accent);
-        text-transform: uppercase;
-        opacity: 0.7;
-        margin-bottom: 0.35rem;
-      }
-      .platform-title {
-        font-family: var(--mono);
-        font-size: 12px;
-        font-weight: 700;
-        color: var(--text);
-        line-height: 1.35;
-      }
-      .platform-sub {
-        font-family: var(--mono);
-        font-size: 9px;
-        color: var(--text-dim);
-        margin-top: 0.25rem;
-      }
-      #stats-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1px;
-        background: var(--border);
-        border-bottom: 1px solid var(--border);
-      }
-      .stat-cell {
-        background: var(--panel);
-        padding: 0.75rem 0.9rem;
-      }
-      .stat-value {
-        font-family: var(--mono);
-        font-size: 17px;
-        font-weight: 700;
-        color: var(--accent);
-      }
-      .stat-label {
-        font-family: var(--mono);
-        font-size: 8px;
-        letter-spacing: 0.08em;
-        color: var(--text-dim);
-        text-transform: uppercase;
-        margin-top: 0.1rem;
-      }
-      .stat-cell.flood .stat-value {
-        color: var(--blue);
-      }
-      #band-switcher {
-        padding: 0.9rem 1.1rem;
-        border-bottom: 1px solid var(--border);
-      }
-      .section-label {
-        font-family: var(--mono);
-        font-size: 8px;
-        letter-spacing: 0.1em;
-        color: var(--text-dim);
-        text-transform: uppercase;
-        margin-bottom: 0.5rem;
-        display: block;
-      }
-      .band-buttons {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 0.35rem;
-      }
-      .band-btn {
-        background: transparent;
-        border: 1px solid var(--border);
-        color: var(--text-dim);
-        font-family: var(--mono);
-        font-size: 10px;
-        padding: 0.4rem 0.5rem;
-        border-radius: 3px;
-        cursor: pointer;
-        transition: all 0.2s;
-        text-align: left;
-      }
-      .band-btn:hover {
-        border-color: var(--accent);
-        color: var(--text);
-      }
-      .band-btn.active {
-        border-color: var(--accent);
-        color: var(--accent);
-        background: rgba(0, 255, 136, 0.06);
-      }
-      .band-btn .band-name {
-        font-weight: 700;
-        font-size: 10px;
-        display: block;
-      }
-      .band-btn .band-desc {
-        font-size: 8px;
-        opacity: 0.6;
-        margin-top: 1px;
-      }
-      #filters {
-        padding: 0.9rem 1.1rem;
-        border-bottom: 1px solid var(--border);
-      }
-      select {
-        background: var(--bg);
-        border: 1px solid var(--border);
-        color: var(--text);
-        font-family: var(--mono);
-        font-size: 11px;
-        padding: 0.35rem 0.55rem;
-        border-radius: 3px;
-        width: 100%;
-        margin-top: 0.35rem;
-      }
-      .filter-row {
-        margin-bottom: 0.65rem;
-      }
-      .filter-row:last-child {
-        margin-bottom: 0;
-      }
-      .toggle-row {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        cursor: pointer;
-        margin-top: 0.5rem;
-      }
-      .toggle-row input {
-        width: auto;
-        accent-color: var(--blue);
-      }
-      .toggle-row span {
-        font-family: var(--mono);
-        font-size: 11px;
-        color: var(--text-dim);
-      }
-      .apply-btn {
-        width: 100%;
-        background: transparent;
-        border: 1px solid var(--accent);
-        color: var(--accent);
-        font-family: var(--mono);
-        font-size: 11px;
-        letter-spacing: 0.06em;
-        padding: 0.45rem;
-        border-radius: 3px;
-        cursor: pointer;
-        margin-top: 0.65rem;
-        transition: all 0.2s;
-      }
-      .apply-btn:hover {
-        background: var(--accent);
-        color: #000;
-      }
-      #detail-panel {
-        flex: 1;
-        padding: 0.9rem 1.1rem;
-        overflow-y: auto;
-      }
-      .detail-title {
-        font-family: var(--mono);
-        font-size: 8px;
-        letter-spacing: 0.1em;
-        color: var(--text-dim);
-        text-transform: uppercase;
-        margin-bottom: 0.65rem;
-      }
-      .detail-empty {
-        font-family: var(--mono);
-        font-size: 11px;
-        color: rgba(255, 255, 255, 0.2);
-        font-style: italic;
-      }
-      .detail-card {
-        background: var(--bg);
-        border: 1px solid var(--border);
-        border-radius: 4px;
-        padding: 0.75rem;
-        display: none;
-      }
-      .detail-card.visible {
-        display: block;
-      }
-      .detail-row {
-        display: flex;
-        justify-content: space-between;
-        padding: 0.28rem 0;
-        border-bottom: 1px solid var(--border);
-        font-family: var(--mono);
-        font-size: 10px;
-      }
-      .detail-row:last-child {
-        border-bottom: none;
-      }
-      .detail-key {
-        color: var(--text-dim);
-      }
-      .detail-val {
-        color: var(--text);
-        font-weight: 600;
-      }
-      .ndvi-bar {
-        height: 4px;
-        border-radius: 2px;
-        margin-top: 6px;
-        background: linear-gradient(to right, #d73027, #fee08b, #1a9850);
-        position: relative;
-      }
-      .ndvi-marker {
-        position: absolute;
-        top: -3px;
-        width: 2px;
-        height: 10px;
-        background: white;
-        border-radius: 1px;
-      }
-      #legend {
-        padding: 0.75rem 1.1rem;
-        border-top: 1px solid var(--border);
-      }
-      .legend-title {
-        font-family: var(--mono);
-        font-size: 8px;
-        letter-spacing: 0.1em;
-        color: var(--text-dim);
-        text-transform: uppercase;
-        margin-bottom: 0.4rem;
-      }
-      .legend-items {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.35rem 0.65rem;
-      }
-      .legend-item {
-        display: flex;
-        align-items: center;
-        gap: 0.28rem;
-        font-family: var(--mono);
-        font-size: 9px;
-        color: var(--text-dim);
-      }
-      .legend-dot {
-        width: 7px;
-        height: 7px;
-        border-radius: 50%;
-        flex-shrink: 0;
-      }
-      .methodology-note {
-        font-family: var(--mono);
-        font-size: 9px;
-        color: rgba(255, 255, 255, 0.2);
-        border-top: 1px solid var(--border);
-        padding: 0.5rem 1.1rem;
-        line-height: 1.5;
-      }
-      #map {
-        flex: 1;
-      }
-      .leaflet-container {
-        background: #0a0a0a;
-      }
-      .leaflet-tooltip {
-        background: #131313;
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        color: rgba(255, 255, 255, 0.75);
-        font-family: "Courier New", monospace;
-        font-size: 10px;
-        padding: 4px 8px;
-        border-radius: 3px;
-        box-shadow: none;
-      }
-      .leaflet-tooltip::before {
-        display: none;
-      }
-      #band-status {
-        position: fixed;
-        bottom: 12px;
-        right: 12px;
-        z-index: 1000;
-        background: #131313;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        color: var(--accent);
-        font-family: var(--mono);
-        font-size: 10px;
-        padding: 6px 10px;
-        border-radius: 3px;
-        letter-spacing: 0.05em;
-      }
-      #loading {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.92);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
-        font-family: "Courier New", monospace;
-        color: #00ff88;
-      }
-      .load-bar-wrap {
-        width: 220px;
-        height: 2px;
-        background: rgba(255, 255, 255, 0.08);
-        border-radius: 1px;
-        margin-top: 1.2rem;
-        overflow: hidden;
-      }
-      .load-bar {
-        height: 100%;
-        width: 0%;
-        background: #00ff88;
-        border-radius: 1px;
-        transition: width 0.4s ease;
-      }
-      .load-text {
-        font-size: 11px;
-        letter-spacing: 0.12em;
-        margin-top: 0.75rem;
-        text-transform: uppercase;
-      }
-      .load-sub {
-        font-size: 9px;
-        color: rgba(255, 255, 255, 0.3);
-        margin-top: 0.3rem;
-      }
-    </style>
-  </head>
-  <body>
-    <div id="loading">
-      <div style="font-size: 22px; opacity: 0.8">◉</div>
-      <div class="load-bar-wrap"><div class="load-bar" id="loadBar"></div></div>
-      <div class="load-text" id="loadText">Initializing</div>
-      <div class="load-sub" id="loadSub">
-        Mekong Delta Agricultural Intelligence Platform
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mekong Delta Agricultural Intelligence Platform</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0c0c0c; --panel: #131313; --border: rgba(255,255,255,0.08);
+  --accent: #00FF88; --red: #FF6B6B; --gold: #FFD700; --teal: #4ECDC4;
+  --blue: #00BFFF; --text: rgba(255,255,255,0.85); --text-dim: rgba(255,255,255,0.45);
+  --mono: 'Courier New', monospace;
+}
+html, body { height: 100%; width: 100%; overflow: hidden; background: var(--bg); }
+#layout { display: flex; height: 100vh; width: 100vw; }
+#sidebar {
+  width: 300px; min-width: 300px; background: var(--panel);
+  border-right: 1px solid var(--border); display: flex;
+  flex-direction: column; overflow: hidden; z-index: 1000;
+}
+#sidebar-header { padding: 1rem 1.1rem 0.8rem; border-bottom: 1px solid var(--border); }
+.eyebrow { font-family: var(--mono); font-size: 9px; letter-spacing: 0.15em; color: var(--accent); text-transform: uppercase; opacity: 0.7; margin-bottom: 0.3rem; }
+.platform-title { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--text); line-height: 1.35; }
+.platform-sub { font-family: var(--mono); font-size: 9px; color: var(--text-dim); margin-top: 0.2rem; }
+
+#stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); border-bottom: 1px solid var(--border); }
+.stat-cell { background: var(--panel); padding: 0.65rem 0.9rem; }
+.stat-value { font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--accent); }
+.stat-label { font-family: var(--mono); font-size: 8px; letter-spacing: 0.08em; color: var(--text-dim); text-transform: uppercase; margin-top: 0.1rem; }
+.stat-cell.flood .stat-value { color: var(--blue); }
+
+#band-switcher { padding: 0.8rem 1.1rem; border-bottom: 1px solid var(--border); }
+.section-label { font-family: var(--mono); font-size: 8px; letter-spacing: 0.1em; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.4rem; display: block; }
+.band-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 0.3rem; margin-bottom: 0.5rem; }
+.band-btn {
+  background: transparent; border: 1px solid var(--border);
+  color: var(--text-dim); font-family: var(--mono); font-size: 10px;
+  padding: 0.35rem 0.45rem; border-radius: 3px; cursor: pointer; transition: all 0.2s; text-align: left;
+}
+.band-btn:hover { border-color: var(--accent); color: var(--text); }
+.band-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(0,255,136,0.06); }
+.band-btn .band-name { font-weight: 700; font-size: 10px; display: block; }
+.band-btn .band-desc { font-size: 8px; opacity: 0.6; margin-top: 1px; }
+
+/* Band legend */
+#band-legend { margin-top: 0.4rem; }
+.legend-ramp {
+  height: 8px; border-radius: 2px; width: 100%;
+  position: relative; margin-bottom: 2px;
+}
+.legend-ramp-labels {
+  display: flex; justify-content: space-between;
+  font-family: var(--mono); font-size: 8px; color: var(--text-dim);
+}
+.legend-note { font-family: var(--mono); font-size: 9px; color: var(--text-dim); }
+
+#filters { padding: 0.8rem 1.1rem; border-bottom: 1px solid var(--border); }
+select { background: var(--bg); border: 1px solid var(--border); color: var(--text); font-family: var(--mono); font-size: 11px; padding: 0.3rem 0.5rem; border-radius: 3px; width: 100%; margin-top: 0.3rem; }
+.filter-row { margin-bottom: 0.55rem; }
+.filter-row:last-child { margin-bottom: 0; }
+.toggle-row { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin-top: 0.4rem; }
+.toggle-row input { width: auto; accent-color: var(--blue); }
+.toggle-row span { font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
+.btn-row { display: flex; gap: 0.4rem; margin-top: 0.6rem; }
+.apply-btn { flex: 1; background: transparent; border: 1px solid var(--accent); color: var(--accent); font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; padding: 0.4rem; border-radius: 3px; cursor: pointer; transition: all 0.2s; }
+.apply-btn:hover { background: var(--accent); color: #000; }
+.reset-btn { background: transparent; border: 1px solid var(--border); color: var(--text-dim); font-family: var(--mono); font-size: 10px; padding: 0.4rem 0.6rem; border-radius: 3px; cursor: pointer; transition: all 0.2s; }
+.reset-btn:hover { border-color: var(--text-dim); color: var(--text); }
+
+#detail-panel { flex: 1; padding: 0.8rem 1.1rem; overflow-y: auto; }
+.detail-title { font-family: var(--mono); font-size: 8px; letter-spacing: 0.1em; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.55rem; }
+.detail-empty { font-family: var(--mono); font-size: 11px; color: rgba(255,255,255,0.2); font-style: italic; }
+.detail-card { background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 0.7rem; display: none; }
+.detail-card.visible { display: block; }
+.detail-row { display: flex; justify-content: space-between; padding: 0.25rem 0; border-bottom: 1px solid var(--border); font-family: var(--mono); font-size: 10px; }
+.detail-row:last-child { border-bottom: none; }
+.detail-key { color: var(--text-dim); }
+.detail-val { color: var(--text); font-weight: 600; }
+
+/* NDVI bar with labels */
+.ndvi-bar-wrap { margin-top: 8px; }
+.ndvi-bar-labels { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 8px; color: var(--text-dim); margin-bottom: 2px; }
+.ndvi-bar { height: 5px; border-radius: 2px; background: linear-gradient(to right, #d73027, #fee08b, #1a9850); position: relative; }
+.ndvi-marker { position: absolute; top: -3px; width: 2px; height: 11px; background: white; border-radius: 1px; box-shadow: 0 0 3px rgba(0,0,0,0.8); }
+.ndvi-zero { position: absolute; top: 0; left: 50%; width: 1px; height: 5px; background: rgba(255,255,255,0.2); }
+
+/* Temporal chart */
+#chart-container { margin-top: 0.75rem; display: none; }
+.chart-title { font-family: var(--mono); font-size: 8px; letter-spacing: 0.08em; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.4rem; }
+#temporal-chart { width: 100%; }
+
+#legend { padding: 0.65rem 1.1rem; border-top: 1px solid var(--border); }
+.legend-title { font-family: var(--mono); font-size: 8px; letter-spacing: 0.1em; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.35rem; }
+.legend-items { display: flex; flex-wrap: wrap; gap: 0.3rem 0.55rem; }
+.legend-item { display: flex; align-items: center; gap: 0.25rem; font-family: var(--mono); font-size: 9px; color: var(--text-dim); }
+.legend-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+.methodology-note { font-family: var(--mono); font-size: 8px; color: rgba(255,255,255,0.18); border-top: 1px solid var(--border); padding: 0.45rem 1.1rem; line-height: 1.5; }
+
+#map { flex: 1; }
+.leaflet-container { background: #0a0a0a; }
+.leaflet-tooltip { background: #131313; border: 1px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.75); font-family: 'Courier New', monospace; font-size: 10px; padding: 4px 8px; border-radius: 3px; box-shadow: none; }
+.leaflet-tooltip::before { display: none; }
+#band-status { position: fixed; bottom: 12px; right: 12px; z-index: 1000; background: #131313; border: 1px solid rgba(255,255,255,0.08); color: var(--accent); font-family: var(--mono); font-size: 10px; padding: 6px 10px; border-radius: 3px; letter-spacing: 0.05em; }
+#loading { position: fixed; inset: 0; background: rgba(0,0,0,0.92); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; font-family: 'Courier New', monospace; color: #00FF88; }
+.load-bar-wrap { width: 220px; height: 2px; background: rgba(255,255,255,0.08); border-radius: 1px; margin-top: 1.2rem; overflow: hidden; }
+.load-bar { height: 100%; width: 0%; background: #00FF88; border-radius: 1px; transition: width 0.4s ease; }
+.load-text { font-size: 11px; letter-spacing: 0.12em; margin-top: 0.75rem; text-transform: uppercase; }
+.load-sub { font-size: 9px; color: rgba(255,255,255,0.3); margin-top: 0.3rem; }
+</style>
+</head>
+<body>
+<div id="loading">
+  <div style="font-size:22px;opacity:0.8">◉</div>
+  <div class="load-bar-wrap"><div class="load-bar" id="loadBar"></div></div>
+  <div class="load-text" id="loadText">Initializing</div>
+  <div class="load-sub" id="loadSub">Mekong Delta Agricultural Intelligence Platform</div>
+</div>
+
+<div id="layout">
+  <div id="sidebar">
+    <div id="sidebar-header">
+      <div class="eyebrow">Sprint 10 · UAV Mission Intelligence</div>
+      <div class="platform-title">Mekong Delta Agricultural<br>Intelligence Platform</div>
+      <div class="platform-sub">Sentinel-2 · PostGIS · XYZ Tiles · Supabase · 499 parcels</div>
+    </div>
+
+    <div id="stats-grid">
+      <div class="stat-cell">
+        <div class="stat-value" id="stat-parcels">—</div>
+        <div class="stat-label">Parcels Shown</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-value" id="stat-obs">—</div>
+        <div class="stat-label">Observations</div>
+      </div>
+      <div class="stat-cell flood">
+        <div class="stat-value" id="stat-flood">—</div>
+        <div class="stat-label">Flood Detections</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-value" id="stat-ndvi">—</div>
+        <div class="stat-label">Avg NDVI</div>
       </div>
     </div>
 
-    <div id="layout">
-      <div id="sidebar">
-        <div id="sidebar-header">
-          <div class="eyebrow">Sprint 10 · UAV Mission Intelligence</div>
-          <div class="platform-title">
-            Mekong Delta Agricultural<br />Intelligence Platform
-          </div>
-          <div class="platform-sub">
-            Sentinel-2 · PostGIS · XYZ Tiles · Supabase · 499 parcels
-          </div>
-        </div>
-        <div id="stats-grid">
-          <div class="stat-cell">
-            <div class="stat-value" id="stat-parcels">—</div>
-            <div class="stat-label">Parcels Shown</div>
-          </div>
-          <div class="stat-cell">
-            <div class="stat-value" id="stat-obs">—</div>
-            <div class="stat-label">Observations</div>
-          </div>
-          <div class="stat-cell flood">
-            <div class="stat-value" id="stat-flood">—</div>
-            <div class="stat-label">Flood Detections</div>
-          </div>
-          <div class="stat-cell">
-            <div class="stat-value" id="stat-ndvi">—</div>
-            <div class="stat-label">Avg NDVI</div>
-          </div>
-        </div>
-        <div id="band-switcher">
-          <span class="section-label">Sentinel-2 Band Layer</span>
-          <div class="band-buttons">
-            <button
-              class="band-btn"
-              onclick="switchBand('true_color')"
-              id="btn-true_color"
-            >
-              <span class="band-name">True Color</span>
-              <span class="band-desc">RGB Natural</span>
-            </button>
-            <button
-              class="band-btn active"
-              onclick="switchBand('ndvi')"
-              id="btn-ndvi"
-            >
-              <span class="band-name">NDVI</span>
-              <span class="band-desc">Vegetation Health</span>
-            </button>
-            <button class="band-btn" onclick="switchBand('ndwi')" id="btn-ndwi">
-              <span class="band-name">NDWI</span>
-              <span class="band-desc">Water / Flood</span>
-            </button>
-            <button class="band-btn" onclick="switchBand('ndre')" id="btn-ndre">
-              <span class="band-name">NDRE</span>
-              <span class="band-desc">Crop Stress</span>
-            </button>
-            <button
-              class="band-btn"
-              onclick="switchBand('false_color')"
-              id="btn-false_color"
-              style="grid-column: span 2"
-            >
-              <span class="band-name">False Color NIR</span>
-              <span class="band-desc"
-                >Near-Infrared · Healthy veg = bright red</span
-              >
-            </button>
-          </div>
-        </div>
-        <div id="filters">
-          <div class="filter-row">
-            <span class="section-label">Land Use</span>
-            <select id="lu-filter">
-              <option value="all">All land use types</option>
-              <option value="Rice Paddy">Rice Paddy</option>
-              <option value="Aquaculture">Aquaculture</option>
-              <option value="Orchard">Orchard</option>
-              <option value="Sugarcane">Sugarcane</option>
-              <option value="Vegetable">Vegetable</option>
-              <option value="Mixed Farm">Mixed Farm</option>
-            </select>
-          </div>
-          <div class="filter-row">
-            <span class="section-label">Country</span>
-            <select id="country-filter">
-              <option value="all">Vietnam + Cambodia</option>
-              <option value="Vietnam">Vietnam only</option>
-              <option value="Cambodia">Cambodia only</option>
-            </select>
-          </div>
-          <div class="filter-row">
-            <label class="toggle-row">
-              <input type="checkbox" id="flood-only" />
-              <span>Show flood detections only</span>
-            </label>
-          </div>
-          <button class="apply-btn" onclick="applyFilters()">
-            APPLY FILTERS
-          </button>
-        </div>
-        <div id="detail-panel">
-          <div class="detail-title">Selected Parcel</div>
-          <div class="detail-empty" id="detail-empty">
-            Click any parcel on the map to inspect observations.
-          </div>
-          <div class="detail-card" id="detail-card">
-            <div class="detail-row">
-              <span class="detail-key">Parcel ID</span
-              ><span class="detail-val" id="d-pid"></span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-key">Province</span
-              ><span class="detail-val" id="d-prov"></span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-key">Land Use</span
-              ><span class="detail-val" id="d-lu"></span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-key">Area</span
-              ><span class="detail-val" id="d-area"></span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-key">Avg NDVI</span
-              ><span class="detail-val" id="d-ndvi"></span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-key">Avg NDWI</span
-              ><span class="detail-val" id="d-ndwi"></span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-key">Flood obs</span
-              ><span class="detail-val" id="d-flood"></span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-key">Observations</span
-              ><span class="detail-val" id="d-nobs"></span>
-            </div>
-            <div class="ndvi-bar">
-              <div class="ndvi-marker" id="ndvi-marker"></div>
-            </div>
-          </div>
-        </div>
-        <div class="methodology-note">
-          Imagery: Sentinel-2 SR · Nov 2022–Apr 2023 · SCL cloud mask<br />
-          Tiles: gdal2tiles XYZ · zoom 7–11 · GitHub Pages<br />
-          Parcels: 499 grid parcels · real Mekong coordinates<br />
-          Observations: spectral profiles from published literature
-        </div>
-        <div id="legend">
-          <div class="legend-title">Land Use</div>
-          <div class="legend-items">
-            <div class="legend-item">
-              <div class="legend-dot" style="background: #00ff88"></div>
-              Rice Paddy
-            </div>
-            <div class="legend-item">
-              <div class="legend-dot" style="background: #00bfff"></div>
-              Aquaculture
-            </div>
-            <div class="legend-item">
-              <div class="legend-dot" style="background: #ffd700"></div>
-              Orchard
-            </div>
-            <div class="legend-item">
-              <div class="legend-dot" style="background: #ff8c00"></div>
-              Sugarcane
-            </div>
-            <div class="legend-item">
-              <div class="legend-dot" style="background: #4ecdc4"></div>
-              Vegetable
-            </div>
-            <div class="legend-item">
-              <div class="legend-dot" style="background: #888"></div>
-              Mixed Farm
-            </div>
-          </div>
-        </div>
+    <div id="band-switcher">
+      <span class="section-label">Sentinel-2 Band Layer</span>
+      <div class="band-buttons">
+        <button class="band-btn" onclick="switchBand('true_color')" id="btn-true_color">
+          <span class="band-name">True Color</span>
+          <span class="band-desc">RGB Natural</span>
+        </button>
+        <button class="band-btn active" onclick="switchBand('ndvi')" id="btn-ndvi">
+          <span class="band-name">NDVI</span>
+          <span class="band-desc">Vegetation Health</span>
+        </button>
+        <button class="band-btn" onclick="switchBand('ndwi')" id="btn-ndwi">
+          <span class="band-name">NDWI</span>
+          <span class="band-desc">Water / Flood</span>
+        </button>
+        <button class="band-btn" onclick="switchBand('ndre')" id="btn-ndre">
+          <span class="band-name">NDRE</span>
+          <span class="band-desc">Crop Stress</span>
+        </button>
+        <button class="band-btn" onclick="switchBand('false_color')" id="btn-false_color" style="grid-column:span 2">
+          <span class="band-name">False Color NIR</span>
+          <span class="band-desc">Near-Infrared · Healthy veg = bright red</span>
+        </button>
       </div>
-      <div id="map"></div>
+      <div id="band-legend"></div>
     </div>
 
-    <div id="band-status">NDVI · Vegetation Health</div>
+    <div id="filters">
+      <div class="filter-row">
+        <span class="section-label">Land Use</span>
+        <select id="lu-filter">
+          <option value="all">All land use types</option>
+          <option value="Rice Paddy">Rice Paddy</option>
+          <option value="Aquaculture">Aquaculture</option>
+          <option value="Orchard">Orchard</option>
+          <option value="Sugarcane">Sugarcane</option>
+          <option value="Vegetable">Vegetable</option>
+          <option value="Mixed Farm">Mixed Farm</option>
+        </select>
+      </div>
+      <div class="filter-row">
+        <span class="section-label">Country</span>
+        <select id="country-filter">
+          <option value="all">Vietnam + Cambodia</option>
+          <option value="Vietnam">Vietnam only</option>
+          <option value="Cambodia">Cambodia only</option>
+        </select>
+      </div>
+      <div class="filter-row">
+        <label class="toggle-row">
+          <input type="checkbox" id="flood-only">
+          <span>Flood detections only</span>
+        </label>
+      </div>
+      <div class="btn-row">
+        <button class="apply-btn" onclick="applyFilters()">APPLY FILTERS</button>
+        <button class="reset-btn" onclick="resetFilters()">RESET</button>
+      </div>
+    </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-    <script>
-      const SUPABASE_URL = "https://guigepoviaqooftjwxzj.supabase.co";
-      const SUPABASE_KEY =
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd1aWdlcG92aWFxb29mdGp3eHpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1MDk4NTIsImV4cCI6MjA5ODA4NTg1Mn0.IsoarD0EbV5GVOn_Bn5rLFi0ysud6Y47H__Eyh-c3JU";
-      const HEADERS = {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`,
-      };
+    <div id="detail-panel">
+      <div class="detail-title">Selected Parcel</div>
+      <div class="detail-empty" id="detail-empty">Click any parcel on the map to inspect observations.</div>
+      <div class="detail-card" id="detail-card">
+        <div class="detail-row"><span class="detail-key">Parcel ID</span><span class="detail-val" id="d-pid"></span></div>
+        <div class="detail-row"><span class="detail-key">Province</span><span class="detail-val" id="d-prov"></span></div>
+        <div class="detail-row"><span class="detail-key">Land Use</span><span class="detail-val" id="d-lu"></span></div>
+        <div class="detail-row"><span class="detail-key">Area</span><span class="detail-val" id="d-area"></span></div>
+        <div class="detail-row"><span class="detail-key">Avg NDVI</span><span class="detail-val" id="d-ndvi"></span></div>
+        <div class="detail-row"><span class="detail-key">Avg NDWI</span><span class="detail-val" id="d-ndwi"></span></div>
+        <div class="detail-row"><span class="detail-key">Flood obs</span><span class="detail-val" id="d-flood"></span></div>
+        <div class="detail-row"><span class="detail-key">Observations</span><span class="detail-val" id="d-nobs"></span></div>
+        <div class="ndvi-bar-wrap">
+          <div class="ndvi-bar-labels"><span>-1</span><span>0</span><span>+1</span></div>
+          <div class="ndvi-bar">
+            <div class="ndvi-zero"></div>
+            <div class="ndvi-marker" id="ndvi-marker"></div>
+          </div>
+        </div>
+        <div id="chart-container">
+          <div class="chart-title">NDVI · NDWI Seasonal Trend</div>
+          <canvas id="temporal-chart" height="130"></canvas>
+        </div>
+      </div>
+    </div>
 
-      const TILE_BASE =
-        "https://goheist01.github.io/uav-mission-intelligence/outputs/tiles";
+    <div class="methodology-note">
+      Imagery: Sentinel-2 SR · Nov 2022–Apr 2023 · SCL cloud mask<br>
+      Tiles: gdal2tiles XYZ · zoom 7–13 · GitHub Pages<br>
+      Parcels: 499 grid parcels · real Mekong coordinates<br>
+      Observations: spectral profiles from published literature
+    </div>
 
-      const BANDS = {
-        true_color: { path: "true_color", label: "True Color · RGB Natural" },
-        ndvi: { path: "ndvi", label: "NDVI · Vegetation Health" },
-        ndwi: { path: "ndwi", label: "NDWI · Water / Flood Extent" },
-        ndre: { path: "ndre", label: "NDRE · Crop Stress (Red Edge)" },
-        false_color: {
-          path: "false_color",
-          label: "False Color NIR · Healthy veg = red",
-        },
-      };
+    <div id="legend">
+      <div class="legend-title">Land Use</div>
+      <div class="legend-items">
+        <div class="legend-item"><div class="legend-dot" style="background:#00FF88"></div>Rice Paddy</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#00BFFF"></div>Aquaculture</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#FFD700"></div>Orchard</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#FF8C00"></div>Sugarcane</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#4ECDC4"></div>Vegetable</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#888"></div>Mixed Farm</div>
+      </div>
+    </div>
+  </div>
 
-      const LU_COLORS = {
-        "Rice Paddy": "#00FF88",
-        Aquaculture: "#00BFFF",
-        Orchard: "#FFD700",
-        Sugarcane: "#FF8C00",
-        Vegetable: "#4ECDC4",
-        "Mixed Farm": "#888888",
-      };
+  <div id="map"></div>
+</div>
 
-      let map,
-        currentBandLayer = null,
-        parcelsLayer = null;
-      let allParcels = [],
-        obsMap = {};
+<div id="band-status">NDVI · Vegetation Health</div>
 
-      function setLoad(pct, text, sub) {
-        document.getElementById("loadBar").style.width = pct + "%";
-        document.getElementById("loadText").textContent = text;
-        if (sub) document.getElementById("loadSub").textContent = sub;
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+const SUPABASE_URL = 'https://guigepoviaqooftjwxzj.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd1aWdlcG92aWFxb29mdGp3eHpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1MDk4NTIsImV4cCI6MjA5ODA4NTg1Mn0.IsoarD0EbV5GVOn_Bn5rLFi0ysud6Y47H__Eyh-c3JU';
+const HEADERS  = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` };
+const TILE_BASE = 'https://goheist01.github.io/uav-mission-intelligence/outputs/tiles';
+
+const BANDS = {
+  true_color:  { path: 'true_color',  label: 'True Color · RGB Natural',               legend: 'rgb' },
+  ndvi:        { path: 'ndvi',        label: 'NDVI · Vegetation Health',               legend: 'ndvi' },
+  ndwi:        { path: 'ndwi',        label: 'NDWI · Water / Flood Extent',            legend: 'ndwi' },
+  ndre:        { path: 'ndre',        label: 'NDRE · Crop Stress (Red Edge)',           legend: 'ndre' },
+  false_color: { path: 'false_color', label: 'False Color NIR · Healthy veg = red',    legend: 'nir' },
+};
+
+const BAND_LEGENDS = {
+  rgb:  '<div class="legend-note">RGB natural color · No index scale</div>',
+  ndvi: '<div class="legend-ramp" style="background:linear-gradient(to right,#d73027,#fee08b,#1a9850)"></div><div class="legend-ramp-labels"><span>-1 Bare/Water</span><span>0</span><span>+1 Dense veg</span></div>',
+  ndwi: '<div class="legend-ramp" style="background:linear-gradient(to right,#543005,#f5f5f5,#003c30)"></div><div class="legend-ramp-labels"><span>-1 Dry</span><span>0</span><span>+1 Water</span></div>',
+  ndre: '<div class="legend-ramp" style="background:linear-gradient(to right,#d73027,#fee08b,#4d9221)"></div><div class="legend-ramp-labels"><span>-1 Stressed</span><span>0</span><span>+1 Healthy</span></div>',
+  nir:  '<div class="legend-note">NIR composite · Bright red = healthy vegetation · Dark = water/urban</div>',
+};
+
+const LU_COLORS = {
+  'Rice Paddy':'#00FF88','Aquaculture':'#00BFFF','Orchard':'#FFD700',
+  'Sugarcane':'#FF8C00','Vegetable':'#4ECDC4','Mixed Farm':'#888888'
+};
+
+let map, currentBandLayer = null, parcelsLayer = null;
+let allParcels = [], obsMap = {};
+let temporalChart = null;
+
+function setLoad(pct, text, sub) {
+  document.getElementById('loadBar').style.width = pct + '%';
+  document.getElementById('loadText').textContent = text;
+  if (sub) document.getElementById('loadSub').textContent = sub;
+}
+
+map = L.map('map', { center: [10.3, 105.8], zoom: 8, maxZoom: 18, zoomControl: true });
+
+const darkBase = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  attribution: '© OpenStreetMap, © CARTO · Imagery: ESA Copernicus Sentinel-2',
+  maxZoom: 18
+}).addTo(map);
+
+function updateBandLegend(bandKey) {
+  document.getElementById('band-legend').innerHTML = BAND_LEGENDS[BANDS[bandKey].legend] || '';
+}
+
+function switchBand(bandKey) {
+  if (currentBandLayer) { map.removeLayer(currentBandLayer); currentBandLayer = null; }
+  document.querySelectorAll('.band-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-' + bandKey).classList.add('active');
+  document.getElementById('band-status').textContent = BANDS[bandKey].label;
+  updateBandLegend(bandKey);
+
+  currentBandLayer = L.tileLayer(
+    `${TILE_BASE}/${BANDS[bandKey].path}/{z}/{x}/{y}.jpg`,
+    { opacity: 0.85, maxZoom: 18, maxNativeZoom: 13, tms: false }
+  );
+  currentBandLayer.addTo(map);
+  currentBandLayer.bringToBack();
+  darkBase.bringToBack();
+  if (parcelsLayer) parcelsLayer.bringToFront();
+}
+
+async function fetchData() {
+  setLoad(20, 'Loading parcels', '499 agricultural parcels');
+  const [r1,r2,r3] = await Promise.all([
+    fetch(`${SUPABASE_URL}/rest/v1/mekong_parcels?select=parcel_id,province,country,land_use,area_ha,geom_geojson&limit=200&offset=0`,   { headers: HEADERS }),
+    fetch(`${SUPABASE_URL}/rest/v1/mekong_parcels?select=parcel_id,province,country,land_use,area_ha,geom_geojson&limit=200&offset=200`, { headers: HEADERS }),
+    fetch(`${SUPABASE_URL}/rest/v1/mekong_parcels?select=parcel_id,province,country,land_use,area_ha,geom_geojson&limit=200&offset=400`, { headers: HEADERS }),
+  ]);
+  const [p1,p2,p3] = await Promise.all([r1.json(),r2.json(),r3.json()]);
+  allParcels = [...p1,...p2,...p3];
+
+  setLoad(50, 'Loading observations', '4,981 spectral observations');
+  const obsPages = await Promise.all([0,1000,2000,3000,4000].map(offset =>
+    fetch(`${SUPABASE_URL}/rest/v1/mekong_observations?select=parcel_id,obs_date,ndvi,ndwi,ndre,flood_detected,crop_stage&limit=1000&offset=${offset}`, { headers: HEADERS })
+      .then(r => r.json())
+  ));
+  const allObs = obsPages.flat();
+  allObs.forEach(o => {
+    if (!obsMap[o.parcel_id]) obsMap[o.parcel_id] = [];
+    obsMap[o.parcel_id].push(o);
+  });
+
+  setLoad(75, 'Loading Sentinel-2 tiles', 'NDVI band');
+  switchBand('ndvi');
+
+  setLoad(90, 'Rendering parcels', `${allParcels.length} agricultural polygons`);
+  renderParcels(allParcels);
+  updateStats(allParcels);
+
+  setLoad(100, 'Complete', `${allParcels.length} parcels · ${allObs.length} observations`);
+  setTimeout(() => { document.getElementById('loading').style.display = 'none'; }, 400);
+}
+
+function renderParcels(data) {
+  if (parcelsLayer) map.removeLayer(parcelsLayer);
+  const floodOnly = document.getElementById('flood-only').checked;
+  const features = [];
+  const parcelLookup = {};
+
+  data.forEach(p => {
+    if (!p.geom_geojson) return;
+    try {
+      const obs = obsMap[p.parcel_id] || [];
+      const floodObs = obs.filter(o => o.flood_detected).length;
+      if (floodOnly && floodObs === 0) return;
+      const geom = JSON.parse(p.geom_geojson);
+      parcelLookup[p.parcel_id] = { parcel: p, obs };
+      features.push({ type: 'Feature', geometry: geom, properties: { parcel_id: p.parcel_id, land_use: p.land_use, province: p.province, country: p.country, floodObs } });
+    } catch(e) {}
+  });
+
+  parcelsLayer = L.geoJSON(
+    { type: 'FeatureCollection', features },
+    {
+      style: f => {
+        const color   = LU_COLORS[f.properties.land_use] || '#888';
+        const flooded = f.properties.floodObs > 0;
+        return { color: flooded ? '#00BFFF' : color, fillColor: color, fillOpacity: 0.35, weight: flooded ? 2 : 1, opacity: 0.7 };
+      },
+      onEachFeature: (f, layer) => {
+        layer.bindTooltip(`<b>${f.properties.parcel_id}</b> · ${f.properties.land_use}<br>${f.properties.province}, ${f.properties.country}`, { sticky: true });
+        layer.on('click', () => {
+          const { parcel, obs } = parcelLookup[f.properties.parcel_id];
+          showDetail(parcel, obs);
+        });
       }
+    }
+  ).addTo(map);
+  parcelsLayer.bringToFront();
+}
 
-      map = L.map("map", { center: [10.3, 105.8], zoom: 8, zoomControl: true });
+function updateStats(data) {
+  let totalObs=0, totalFlood=0, ndviSum=0, ndviCount=0;
+  data.forEach(p => {
+    const obs = obsMap[p.parcel_id] || [];
+    totalObs += obs.length;
+    totalFlood += obs.filter(o => o.flood_detected).length;
+    obs.forEach(o => { ndviSum += o.ndvi; ndviCount++; });
+  });
+  document.getElementById('stat-parcels').textContent = data.length.toLocaleString();
+  document.getElementById('stat-obs').textContent     = totalObs.toLocaleString();
+  document.getElementById('stat-flood').textContent   = totalFlood.toLocaleString();
+  document.getElementById('stat-ndvi').textContent    = ndviCount > 0 ? (ndviSum/ndviCount).toFixed(3) : '—';
+}
 
-      const darkBase = L.tileLayer(
-        "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+function applyFilters() {
+  const lu      = document.getElementById('lu-filter').value;
+  const country = document.getElementById('country-filter').value;
+  const filtered = allParcels.filter(p =>
+    (lu === 'all' || p.land_use === lu) &&
+    (country === 'all' || p.country === country)
+  );
+  renderParcels(filtered);
+  updateStats(filtered);
+}
+
+function resetFilters() {
+  document.getElementById('lu-filter').value      = 'all';
+  document.getElementById('country-filter').value = 'all';
+  document.getElementById('flood-only').checked   = false;
+  renderParcels(allParcels);
+  updateStats(allParcels);
+}
+
+function showDetail(p, obs) {
+  document.getElementById('detail-empty').style.display = 'none';
+  document.getElementById('detail-card').classList.add('visible');
+  const avgNdvi  = obs.reduce((s,o) => s+o.ndvi, 0) / (obs.length||1);
+  const avgNdwi  = obs.reduce((s,o) => s+o.ndwi, 0) / (obs.length||1);
+  const floodObs = obs.filter(o => o.flood_detected).length;
+
+  document.getElementById('d-pid').textContent   = p.parcel_id;
+  document.getElementById('d-prov').textContent  = `${p.province}, ${p.country}`;
+  document.getElementById('d-lu').textContent    = p.land_use;
+  document.getElementById('d-area').textContent  = `${p.area_ha} ha`;
+  document.getElementById('d-ndvi').textContent  = avgNdvi.toFixed(4);
+  document.getElementById('d-ndwi').textContent  = avgNdwi.toFixed(4);
+  document.getElementById('d-flood').textContent = `${floodObs} / ${obs.length}`;
+  document.getElementById('d-nobs').textContent  = obs.length;
+
+  const pct = ((avgNdvi + 1) / 2) * 100;
+  document.getElementById('ndvi-marker').style.left = Math.max(0,Math.min(100,pct)) + '%';
+
+  // Temporal chart
+  drawTemporalChart(obs);
+}
+
+function drawTemporalChart(obs) {
+  const sorted = [...obs].sort((a,b) => a.obs_date.localeCompare(b.obs_date));
+  const labels  = sorted.map(o => o.obs_date.substring(5)); // MM-DD
+  const ndviData = sorted.map(o => parseFloat(o.ndvi));
+  const ndwiData = sorted.map(o => parseFloat(o.ndwi));
+
+  document.getElementById('chart-container').style.display = 'block';
+
+  if (temporalChart) { temporalChart.destroy(); temporalChart = null; }
+
+  const ctx = document.getElementById('temporal-chart').getContext('2d');
+  temporalChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
         {
-          attribution:
-            "© OpenStreetMap, © CARTO · Imagery: ESA Copernicus Sentinel-2",
-          maxZoom: 19,
+          label: 'NDVI',
+          data: ndviData,
+          borderColor: '#00FF88',
+          backgroundColor: 'rgba(0,255,136,0.08)',
+          borderWidth: 1.5,
+          pointRadius: 2,
+          pointBackgroundColor: '#00FF88',
+          tension: 0.3,
+          fill: false,
         },
-      ).addTo(map);
-
-      function switchBand(bandKey) {
-        if (currentBandLayer) {
-          map.removeLayer(currentBandLayer);
-          currentBandLayer = null;
+        {
+          label: 'NDWI',
+          data: ndwiData,
+          borderColor: '#00BFFF',
+          backgroundColor: 'rgba(0,191,255,0.08)',
+          borderWidth: 1.5,
+          pointRadius: 2,
+          pointBackgroundColor: '#00BFFF',
+          tension: 0.3,
+          fill: false,
         }
-        document
-          .querySelectorAll(".band-btn")
-          .forEach((b) => b.classList.remove("active"));
-        document.getElementById("btn-" + bandKey).classList.add("active");
-        document.getElementById("band-status").textContent =
-          BANDS[bandKey].label;
-
-        if (bandKey === "none") return;
-
-        currentBandLayer = L.tileLayer(
-          `${TILE_BASE}/${BANDS[bandKey].path}/{z}/{x}/{y}.jpg`,
-          { opacity: 0.85, maxZoom: 11, maxNativeZoom: 11, tms: false },
-        );
-        currentBandLayer.addTo(map);
-        currentBandLayer.bringToBack();
-        darkBase.bringToBack();
-        if (parcelsLayer) parcelsLayer.bringToFront();
+      ]
+    },
+    options: {
+      responsive: true,
+      animation: false,
+      plugins: {
+        legend: {
+          labels: {
+            color: 'rgba(255,255,255,0.45)',
+            font: { family: 'Courier New', size: 9 },
+            boxWidth: 10, padding: 8
+          }
+        },
+        tooltip: {
+          backgroundColor: '#131313',
+          borderColor: 'rgba(255,255,255,0.12)',
+          borderWidth: 1,
+          titleFont: { family: 'Courier New', size: 9 },
+          bodyFont:  { family: 'Courier New', size: 9 },
+          titleColor: 'rgba(255,255,255,0.7)',
+          bodyColor:  'rgba(255,255,255,0.7)',
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: 'rgba(255,255,255,0.3)', font: { family: 'Courier New', size: 7 }, maxTicksLimit: 6, maxRotation: 0 },
+          grid:  { color: 'rgba(255,255,255,0.04)' },
+          border: { color: 'rgba(255,255,255,0.08)' }
+        },
+        y: {
+          min: -0.5, max: 1.0,
+          ticks: { color: 'rgba(255,255,255,0.3)', font: { family: 'Courier New', size: 8 }, stepSize: 0.25 },
+          grid:  { color: 'rgba(255,255,255,0.04)' },
+          border: { color: 'rgba(255,255,255,0.08)' }
+        }
       }
+    }
+  });
+}
 
-      async function fetchData() {
-        setLoad(20, "Loading parcels", "499 agricultural parcels");
-        const [r1, r2, r3] = await Promise.all([
-          fetch(
-            `${SUPABASE_URL}/rest/v1/mekong_parcels?select=parcel_id,province,country,land_use,area_ha,geom_geojson&limit=200&offset=0`,
-            { headers: HEADERS },
-          ),
-          fetch(
-            `${SUPABASE_URL}/rest/v1/mekong_parcels?select=parcel_id,province,country,land_use,area_ha,geom_geojson&limit=200&offset=200`,
-            { headers: HEADERS },
-          ),
-          fetch(
-            `${SUPABASE_URL}/rest/v1/mekong_parcels?select=parcel_id,province,country,land_use,area_ha,geom_geojson&limit=200&offset=400`,
-            { headers: HEADERS },
-          ),
-        ]);
-        const [p1, p2, p3] = await Promise.all([
-          r1.json(),
-          r2.json(),
-          r3.json(),
-        ]);
-        allParcels = [...p1, ...p2, ...p3];
-
-        setLoad(50, "Loading observations", "4,981 spectral observations");
-        const obsPages = await Promise.all(
-          [0, 1000, 2000, 3000, 4000].map((offset) =>
-            fetch(
-              `${SUPABASE_URL}/rest/v1/mekong_observations?select=parcel_id,ndvi,ndwi,ndre,flood_detected&limit=1000&offset=${offset}`,
-              { headers: HEADERS },
-            ).then((r) => r.json()),
-          ),
-        );
-        const allObs = obsPages.flat();
-        allObs.forEach((o) => {
-          if (!obsMap[o.parcel_id]) obsMap[o.parcel_id] = [];
-          obsMap[o.parcel_id].push(o);
-        });
-
-        setLoad(75, "Loading Sentinel-2 tiles", "NDVI band");
-        switchBand("ndvi");
-
-        setLoad(
-          90,
-          "Rendering parcels",
-          `${allParcels.length} agricultural polygons`,
-        );
-        renderParcels(allParcels);
-        updateStats(allParcels);
-
-        setLoad(
-          100,
-          "Complete",
-          `${allParcels.length} parcels · ${allObs.length} observations`,
-        );
-        setTimeout(() => {
-          document.getElementById("loading").style.display = "none";
-        }, 400);
-      }
-
-      function renderParcels(data) {
-        if (parcelsLayer) map.removeLayer(parcelsLayer);
-        parcelsLayer = L.layerGroup();
-        const floodOnly = document.getElementById("flood-only").checked;
-
-        data.forEach((p) => {
-          if (!p.geom_geojson) return;
-          try {
-            const geojson = JSON.parse(p.geom_geojson);
-            const obs = obsMap[p.parcel_id] || [];
-            const floodObs = obs.filter((o) => o.flood_detected).length;
-            if (floodOnly && floodObs === 0) return;
-            const color = LU_COLORS[p.land_use] || "#888";
-            const layer = L.geoJSON(
-              { type: "Feature", geometry: geojson },
-              {
-                style: {
-                  color: floodObs > 0 ? "#00BFFF" : color,
-                  fillColor: color,
-                  fillOpacity: 0.35,
-                  weight: floodObs > 0 ? 2 : 1,
-                  opacity: 0.7,
-                },
-              },
-            );
-            layer.bindTooltip(
-              `<b>${p.parcel_id}</b> · ${p.land_use}<br>${p.province}, ${p.country}`,
-              { sticky: true },
-            );
-            layer.on("click", () => showDetail(p, obs));
-            parcelsLayer.addLayer(layer);
-          } catch (e) {}
-        });
-        parcelsLayer.addTo(map);
-        parcelsLayer.bringToFront();
-      }
-
-      function updateStats(data) {
-        let totalObs = 0,
-          totalFlood = 0,
-          ndviSum = 0,
-          ndviCount = 0;
-        data.forEach((p) => {
-          const obs = obsMap[p.parcel_id] || [];
-          totalObs += obs.length;
-          totalFlood += obs.filter((o) => o.flood_detected).length;
-          obs.forEach((o) => {
-            ndviSum += o.ndvi;
-            ndviCount++;
-          });
-        });
-        document.getElementById("stat-parcels").textContent =
-          data.length.toLocaleString();
-        document.getElementById("stat-obs").textContent =
-          totalObs.toLocaleString();
-        document.getElementById("stat-flood").textContent =
-          totalFlood.toLocaleString();
-        document.getElementById("stat-ndvi").textContent =
-          ndviCount > 0 ? (ndviSum / ndviCount).toFixed(3) : "—";
-      }
-
-      function applyFilters() {
-        const lu = document.getElementById("lu-filter").value;
-        const country = document.getElementById("country-filter").value;
-        const filtered = allParcels.filter(
-          (p) =>
-            (lu === "all" || p.land_use === lu) &&
-            (country === "all" || p.country === country),
-        );
-        renderParcels(filtered);
-        updateStats(filtered);
-      }
-
-      function showDetail(p, obs) {
-        document.getElementById("detail-empty").style.display = "none";
-        document.getElementById("detail-card").classList.add("visible");
-        const avgNdvi = obs.reduce((s, o) => s + o.ndvi, 0) / (obs.length || 1);
-        const avgNdwi = obs.reduce((s, o) => s + o.ndwi, 0) / (obs.length || 1);
-        const floodObs = obs.filter((o) => o.flood_detected).length;
-        document.getElementById("d-pid").textContent = p.parcel_id;
-        document.getElementById("d-prov").textContent =
-          `${p.province}, ${p.country}`;
-        document.getElementById("d-lu").textContent = p.land_use;
-        document.getElementById("d-area").textContent = `${p.area_ha} ha`;
-        document.getElementById("d-ndvi").textContent = avgNdvi.toFixed(4);
-        document.getElementById("d-ndwi").textContent = avgNdwi.toFixed(4);
-        document.getElementById("d-flood").textContent =
-          `${floodObs} / ${obs.length}`;
-        document.getElementById("d-nobs").textContent = obs.length;
-        const pct = ((avgNdvi + 1) / 2) * 100;
-        document.getElementById("ndvi-marker").style.left =
-          Math.max(0, Math.min(100, pct)) + "%";
-      }
-
-      fetchData();
-    </script>
-  </body>
+fetchData();
+</script>
+</body>
 </html>
